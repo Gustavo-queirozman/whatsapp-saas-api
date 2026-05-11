@@ -1,6 +1,10 @@
 <?php
 
+use App\Domain\WhatsApp\Controllers\EvolutionWebhookController;
 use Illuminate\Support\Facades\Route;
+
+Route::post('/webhooks/evolution', EvolutionWebhookController::class)
+    ->middleware('evolution.webhook');
 
 Route::prefix('v1')->group(function () {
     require base_path('routes/domains/system.php');

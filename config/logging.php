@@ -67,6 +67,13 @@ return [
             'days' => 14,
         ],
 
+        'evolution_webhooks' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/evolution-webhooks.log'),
+            'level' => env('LOG_LEVEL', 'info'),
+            'days' => 14,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),
