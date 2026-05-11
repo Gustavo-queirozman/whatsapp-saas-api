@@ -6,6 +6,7 @@ use App\Domain\Companies\Models\Company;
 use App\Domain\Companies\Models\Permission;
 use App\Domain\Companies\Models\Role;
 use App\Domain\Companies\Models\Workspace;
+use App\Domain\Queues\Models\Sector;
 use App\Models\User;
 
 trait CreatesCompanyContext
@@ -61,6 +62,17 @@ trait CreatesCompanyContext
             'name' => 'Principal',
             'slug' => 'principal-'.uniqid(),
             'timezone' => 'America/Sao_Paulo',
+            'settings' => [],
+        ], $attributes));
+    }
+
+    protected function createSector(Company $company, array $attributes = []): Sector
+    {
+        return Sector::query()->create(array_merge([
+            'company_id' => $company->id,
+            'name' => 'Atendimento',
+            'slug' => 'atendimento-'.uniqid(),
+            'color' => '#2563eb',
             'settings' => [],
         ], $attributes));
     }

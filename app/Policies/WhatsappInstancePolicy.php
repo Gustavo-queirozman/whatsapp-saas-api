@@ -29,4 +29,9 @@ class WhatsappInstancePolicy
     {
         return $this->hasCompanyAccess($user, $whatsappInstance, 'whatsapp.manage');
     }
+
+    public function delete(User $user, WhatsappInstance $whatsappInstance): bool
+    {
+        return $this->hasCompanyAccess($user, $whatsappInstance, 'whatsapp.manage');
+    }
 }

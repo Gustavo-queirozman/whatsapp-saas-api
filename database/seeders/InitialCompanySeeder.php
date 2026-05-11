@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use App\Domain\Companies\Models\Company;
 use App\Domain\Companies\Models\Permission;
 use App\Domain\Companies\Models\Role;
+use App\Domain\Queues\Models\Sector;
+use App\Domain\WhatsApp\Models\WhatsappInstance;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -85,12 +87,29 @@ class InitialCompanySeeder extends Seeder
             ]
         );
 
-        $workspace->whatsappInstances()->updateOrCreate(
-            ['name' => 'Canal Principal'],
+        $sector = Sector::query()->updateOrCreate(
             [
                 'company_id' => $company->id,
-                'provider' => 'cloud_api',
+                'slug' => 'atendimento',
+            ],
+            [
+                'company_id' => $company->id,
+                'name' => 'Atendimento',
+                'color' => '#2563eb',
+                'settings' => [],
+            ]
+        );
+
+        WhatsappInstance::query()->updateOrCreate(
+            [
+                'company_id' => $company->id,
+                'instance_name' => 'canal_principal',
+            ],
+            [
+                'sector_id' => $sector->id,
+                'phone_number' => null,
                 'status' => 'disconnected',
+                'metadata' => [],
             ]
         );
     }

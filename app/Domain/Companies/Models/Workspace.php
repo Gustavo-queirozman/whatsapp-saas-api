@@ -4,7 +4,6 @@ namespace App\Domain\Companies\Models;
 
 use App\Domain\Conversations\Models\Contact;
 use App\Domain\Conversations\Models\Conversation;
-use App\Domain\WhatsApp\Models\WhatsappInstance;
 use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -31,11 +30,6 @@ class Workspace extends Model
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
-    }
-
-    public function whatsappInstances(): HasMany
-    {
-        return $this->hasMany(WhatsappInstance::class);
     }
 
     public function contacts(): HasMany

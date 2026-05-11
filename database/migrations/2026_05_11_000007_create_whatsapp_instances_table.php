@@ -11,15 +11,15 @@ return new class extends Migration
         Schema::create('whatsapp_instances', function (Blueprint $table) {
             $table->id();
             $table->foreignId('company_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('workspace_id')->constrained()->cascadeOnDelete();
-            $table->string('name');
-            $table->string('provider')->default('cloud_api');
+            $table->foreignId('sector_id')->constrained()->cascadeOnDelete();
+            $table->string('instance_name');
             $table->string('phone_number')->nullable();
             $table->string('status')->default('disconnected');
-            $table->json('settings')->nullable();
-            $table->timestamp('connected_at')->nullable();
+            $table->timestamp('last_connection_at')->nullable();
+            $table->json('metadata')->nullable();
             $table->timestamps();
 
+            $table->unique(['company_id', 'instance_name']);
             $table->index(['company_id', 'status']);
         });
     }

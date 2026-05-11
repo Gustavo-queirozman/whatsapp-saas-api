@@ -2,6 +2,7 @@
 
 namespace App\Domain\Companies\Models;
 
+use App\Domain\Queues\Models\Sector;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -43,5 +44,10 @@ class Company extends Model
     public function workspaces(): HasMany
     {
         return $this->hasMany(Workspace::class);
+    }
+
+    public function sectors(): HasMany
+    {
+        return $this->hasMany(Sector::class);
     }
 }

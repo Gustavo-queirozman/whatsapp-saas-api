@@ -10,11 +10,20 @@ class WhatsappInstanceResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
-            'provider' => $this->provider,
+            'company_id' => $this->company_id,
+            'sector_id' => $this->sector_id,
+            'instance_name' => $this->instance_name,
             'phone_number' => $this->phone_number,
             'status' => $this->status,
-            'connected_at' => optional($this->connected_at)->toAtomString(),
+            'last_connection_at' => optional($this->last_connection_at)->toAtomString(),
+            'metadata' => $this->metadata ?? [],
+            'sector' => $this->whenLoaded('sector', fn (): array => [
+                'id' => $this->sector?->id,
+                'name' => $this->sector?->name,
+                'slug' => $this->sector?->slug,
+            ]),
+            'created_at' => optional($this->created_at)->toAtomString(),
+            'updated_at' => optional($this->updated_at)->toAtomString(),
         ];
     }
 }

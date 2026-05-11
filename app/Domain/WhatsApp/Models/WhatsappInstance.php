@@ -3,7 +3,7 @@
 namespace App\Domain\WhatsApp\Models;
 
 use App\Domain\Conversations\Models\Conversation;
-use App\Domain\Companies\Models\Workspace;
+use App\Domain\Queues\Models\Sector;
 use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,23 +17,22 @@ class WhatsappInstance extends Model
 
     protected $fillable = [
         'company_id',
-        'workspace_id',
-        'name',
-        'provider',
+        'sector_id',
+        'instance_name',
         'phone_number',
         'status',
-        'settings',
-        'connected_at',
+        'last_connection_at',
+        'metadata',
     ];
 
     protected $casts = [
-        'settings' => 'array',
-        'connected_at' => 'datetime',
+        'metadata' => 'array',
+        'last_connection_at' => 'datetime',
     ];
 
-    public function workspace(): BelongsTo
+    public function sector(): BelongsTo
     {
-        return $this->belongsTo(Workspace::class);
+        return $this->belongsTo(Sector::class);
     }
 
     public function conversations(): HasMany
