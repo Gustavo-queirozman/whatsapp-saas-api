@@ -78,9 +78,10 @@ class EvolutionWebhookApiTest extends TestCase
         $this->assertSame('Maria Souza', $contact->name);
 
         $this->assertSame($company->id, $conversation->company_id);
-        $this->assertSame($workspace->id, $conversation->workspace_id);
+        $this->assertSame($sector->id, $conversation->sector_id);
         $this->assertSame($instance->id, $conversation->whatsapp_instance_id);
         $this->assertSame($contact->id, $conversation->contact_id);
+        $this->assertSame(Conversation::STATUS_WAITING, $conversation->status);
         $this->assertNotNull($conversation->last_message_at);
 
         $this->assertSame($company->id, $message->company_id);
@@ -155,10 +156,10 @@ class EvolutionWebhookApiTest extends TestCase
 
         $conversation = Conversation::query()->create([
             'company_id' => $company->id,
-            'workspace_id' => $workspace->id,
+            'sector_id' => $sector->id,
             'whatsapp_instance_id' => $instance->id,
             'contact_id' => $contact->id,
-            'status' => 'open',
+            'status' => Conversation::STATUS_OPEN,
             'last_message_at' => now(),
         ]);
 

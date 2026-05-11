@@ -3,7 +3,6 @@
 namespace App\Domain\Companies\Models;
 
 use App\Domain\Conversations\Models\Contact;
-use App\Domain\Conversations\Models\Conversation;
 use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -35,10 +34,5 @@ class Workspace extends Model
     public function contacts(): HasMany
     {
         return $this->hasMany(Contact::class);
-    }
-
-    public function conversations(): HasMany
-    {
-        return $this->hasMany(Conversation::class);
     }
 }

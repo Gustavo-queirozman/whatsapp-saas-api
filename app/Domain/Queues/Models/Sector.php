@@ -2,6 +2,7 @@
 
 namespace App\Domain\Queues\Models;
 
+use App\Domain\Conversations\Models\Conversation;
 use App\Domain\WhatsApp\Models\WhatsappInstance;
 use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -28,5 +29,10 @@ class Sector extends Model
     public function whatsappInstances(): HasMany
     {
         return $this->hasMany(WhatsappInstance::class);
+    }
+
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class);
     }
 }

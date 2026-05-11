@@ -94,10 +94,13 @@ class ProcessEvolutionWebhookAction
             }
 
             $contact = $this->upsertContact($payload, $whatsappInstance->company_id, $workspace->id);
-            $conversation = $this->upsertConversation($whatsappInstance, $workspace->id, $contact->id);
+            $conversation = $this->upsertConversation($whatsappInstance, $contact->id);
             $message = $this->createMessage($payload, $conversation->id, $whatsappInstance->company_id);
 
             $conversation->forceFill([
+                'status' => $conversation->status === Conversation::STATUS_OPEN
+                    ? Conversation::STATUS_OPEN
+                    : Conversation::STATUS_WAITING,
                 'last_message_at' => $message->sent_at ?? Carbon::now(),
             ])->save();
 
@@ -165,19 +168,37 @@ class ProcessEvolutionWebhookAction
         return $contact;
     }
 
-    private function upsertConversation(WhatsappInstance $whatsappInstance, int $workspaceId, int $contactId): Conversation
+    private function upsertConversation(WhatsappInstance $whatsappInstance, int $contactId): Conversation
     {
-        return Conversation::query()->firstOrCreate(
+        $conversation = Conversation::query()->firstOrCreate(
             [
-                'workspace_id' => $workspaceId,
                 'whatsapp_instance_id' => $whatsappInstance->id,
                 'contact_id' => $contactId,
             ],
             [
                 'company_id' => $whatsappInstance->company_id,
-                'status' => 'open',
+                'sector_id' => $whatsappInstance->sector_id,
+                'status' => Conversation::STATUS_WAITING,
             ],
         );
+
+        $dirty = false;
+
+        if ($conversation->sector_id !== $whatsappInstance->sector_id) {
+            $conversation->sector_id = $whatsappInstance->sector_id;
+            $dirty = true;
+        }
+
+        if ($conversation->status === Conversation::STATUS_CLOSED) {
+            $conversation->status = Conversation::STATUS_WAITING;
+            $dirty = true;
+        }
+
+        if ($dirty) {
+            $conversation->save();
+        }
+
+        return $conversation;
     }
 
     private function createMessage(EvolutionWebhookPayloadData $payload, int $conversationId, int $companyId): Message
@@ -185,7 +206,7 @@ class ProcessEvolutionWebhookAction
         return Message::query()->create([
             'company_id' => $companyId,
             'conversation_id' => $conversationId,
-            'direction' => 'inbound',
+            'direction' => Message::DIRECTION_INBOUND,
             'type' => $payload->messageType,
             'external_id' => $payload->externalId,
             'body' => $payload->body,

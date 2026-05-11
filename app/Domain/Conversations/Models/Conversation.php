@@ -2,7 +2,7 @@
 
 namespace App\Domain\Conversations\Models;
 
-use App\Domain\Companies\Models\Workspace;
+use App\Domain\Queues\Models\Sector;
 use App\Domain\WhatsApp\Models\WhatsappInstance;
 use App\Models\Concerns\BelongsToCompany;
 use App\Models\User;
@@ -16,9 +16,15 @@ class Conversation extends Model
     use BelongsToCompany;
     use HasFactory;
 
+    public const STATUS_WAITING = 'waiting';
+
+    public const STATUS_OPEN = 'open';
+
+    public const STATUS_CLOSED = 'closed';
+
     protected $fillable = [
         'company_id',
-        'workspace_id',
+        'sector_id',
         'whatsapp_instance_id',
         'contact_id',
         'assigned_user_id',
@@ -30,9 +36,9 @@ class Conversation extends Model
         'last_message_at' => 'datetime',
     ];
 
-    public function workspace(): BelongsTo
+    public function sector(): BelongsTo
     {
-        return $this->belongsTo(Workspace::class);
+        return $this->belongsTo(Sector::class);
     }
 
     public function whatsappInstance(): BelongsTo

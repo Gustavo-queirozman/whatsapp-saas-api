@@ -12,6 +12,12 @@ class Message extends Model
     use BelongsToCompany;
     use HasFactory;
 
+    public const DIRECTION_INBOUND = 'inbound';
+
+    public const DIRECTION_OUTBOUND = 'outbound';
+
+    public const TYPE_TEXT = 'text';
+
     protected $fillable = [
         'company_id',
         'conversation_id',

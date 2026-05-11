@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('conversations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('company_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('workspace_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('sector_id')->constrained()->cascadeOnDelete();
             $table->foreignId('whatsapp_instance_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('contact_id')->constrained()->cascadeOnDelete();
             $table->foreignId('assigned_user_id')->nullable()->constrained('users')->nullOnDelete();
@@ -20,6 +20,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['company_id', 'status']);
+            $table->index(['company_id', 'sector_id']);
         });
     }
 
