@@ -2,14 +2,18 @@
 
 namespace App\Domain\Conversations\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Message extends Model
 {
+    use BelongsToCompany;
     use HasFactory;
 
     protected $fillable = [
+        'company_id',
         'conversation_id',
         'direction',
         'type',
@@ -28,7 +32,7 @@ class Message extends Model
         'read_at' => 'datetime',
     ];
 
-    public function conversation()
+    public function conversation(): BelongsTo
     {
         return $this->belongsTo(Conversation::class);
     }

@@ -4,12 +4,13 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateConversationsTable extends Migration
+return new class extends Migration
 {
-    public function up()
+    public function up(): void
     {
         Schema::create('conversations', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('company_id')->constrained()->cascadeOnDelete();
             $table->foreignId('workspace_id')->constrained()->cascadeOnDelete();
             $table->foreignId('whatsapp_instance_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('contact_id')->constrained()->cascadeOnDelete();
@@ -18,12 +19,12 @@ class CreateConversationsTable extends Migration
             $table->timestamp('last_message_at')->nullable();
             $table->timestamps();
 
-            $table->index(['workspace_id', 'status']);
+            $table->index(['company_id', 'status']);
         });
     }
 
-    public function down()
+    public function down(): void
     {
         Schema::dropIfExists('conversations');
     }
-}
+};

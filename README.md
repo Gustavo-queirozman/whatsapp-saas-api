@@ -13,7 +13,7 @@ Base inicial de uma API Laravel para um SaaS multi-tenant de atendimento WhatsAp
 ## Estrutura inicial
 
 - `Auth`: login, logout e perfil autenticado
-- `Tenants`: tenants, memberships e workspaces
+- `Companies`: companies, memberships e workspaces
 - `WhatsApp`: instancias de conexao por workspace
 - `Conversations`: contatos, conversas e mensagens
 - `System`: health check da API
@@ -24,7 +24,7 @@ Base inicial de uma API Laravel para um SaaS multi-tenant de atendimento WhatsAp
 - `POST /api/v1/auth/login`
 - `GET /api/v1/auth/me`
 - `POST /api/v1/auth/logout`
-- `GET /api/v1/tenants`
+- `GET /api/v1/companies`
 
 ## Instalacao
 

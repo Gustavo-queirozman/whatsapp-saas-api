@@ -11,33 +11,51 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    public function login(LoginRequest $request)
+    public function login(LoginRequest $request): \Illuminate\Http\JsonResponse
     {
         $user = User::where('email', $request->input('email'))->first();
 
         if (! $user || ! Hash::check($request->input('password'), $user->password)) {
             return response()->json([
+                'success' => false,
                 'message' => 'Credenciais invalidas.',
             ], 422);
         }
 
-        $user->load(['tenants.workspaces.whatsappInstances']);
+        $user->load([
+            'companies' => fn ($query) => $query->wherePivot('is_active', true),
+            'companyMemberships.role.permissions',
+        ]);
+
+        $currentCompany = $user->companies->first();
+
+        if ($currentCompany !== null) {
+            $user->setRelation('currentCompany', $currentCompany);
+        }
 
         return response()->json([
-            'token_type' => 'Bearer',
-            'access_token' => $user->createToken($request->input('device_name', 'frontend'))->plainTextToken,
-            'user' => new UserResource($user),
+            'success' => true,
+            'data' => [
+                'token_type' => 'Bearer',
+                'access_token' => $user->createToken($request->input('device_name', 'frontend'))->plainTextToken,
+                'user' => (new UserResource($user))->resolve($request),
+            ],
         ]);
     }
 
-    public function me(Request $request)
+    public function me(Request $request): \Illuminate\Http\JsonResponse
     {
-        return new UserResource(
-            $request->user()->load(['tenants.workspaces.whatsappInstances'])
-        );
+        $user = $request->user()->load([
+            'companies' => fn ($query) => $query->wherePivot('is_active', true),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => (new UserResource($user))->resolve($request),
+        ]);
     }
 
-    public function logout(Request $request)
+    public function logout(Request $request): \Illuminate\Http\JsonResponse
     {
         $token = $request->user()->currentAccessToken();
 
@@ -46,7 +64,10 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'message' => 'Sessao encerrada com sucesso.',
+            'success' => true,
+            'data' => [
+                'message' => 'Sessao encerrada com sucesso.',
+            ],
         ]);
     }
 }
