@@ -58,6 +58,7 @@ class SendConversationMessageAction
 
             $conversation->forceFill([
                 'status' => Conversation::STATUS_OPEN,
+                'closed_at' => null,
                 'last_message_at' => $message->sent_at ?? now(),
             ])->save();
 

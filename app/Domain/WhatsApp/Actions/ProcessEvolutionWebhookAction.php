@@ -101,6 +101,13 @@ class ProcessEvolutionWebhookAction
                 'status' => $conversation->status === Conversation::STATUS_OPEN
                     ? Conversation::STATUS_OPEN
                     : Conversation::STATUS_WAITING,
+                'assigned_user_id' => $conversation->status === Conversation::STATUS_OPEN
+                    ? $conversation->assigned_user_id
+                    : null,
+                'assigned_at' => $conversation->status === Conversation::STATUS_OPEN
+                    ? $conversation->assigned_at
+                    : null,
+                'closed_at' => null,
                 'last_message_at' => $message->sent_at ?? Carbon::now(),
             ])->save();
 
@@ -191,6 +198,9 @@ class ProcessEvolutionWebhookAction
 
         if ($conversation->status === Conversation::STATUS_CLOSED) {
             $conversation->status = Conversation::STATUS_WAITING;
+            $conversation->assigned_user_id = null;
+            $conversation->assigned_at = null;
+            $conversation->closed_at = null;
             $dirty = true;
         }
 

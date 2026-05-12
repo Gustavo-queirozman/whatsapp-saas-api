@@ -12,12 +12,12 @@ class ConversationPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->hasCompanyPermission('conversations.view');
+        return $this->hasConversationPermission($user);
     }
 
     public function view(User $user, Conversation $conversation): bool
     {
-        return $this->hasCompanyAccess($user, $conversation, 'conversations.view');
+        return $this->hasCompanyConversationAccess($user, $conversation);
     }
 
     public function create(User $user): bool
@@ -28,5 +28,32 @@ class ConversationPolicy
     public function update(User $user, Conversation $conversation): bool
     {
         return $this->hasCompanyAccess($user, $conversation, 'conversations.manage');
+    }
+
+    public function assignToSelf(User $user, Conversation $conversation): bool
+    {
+        return $this->hasCompanyConversationAccess($user, $conversation);
+    }
+
+    public function assignUser(User $user, Conversation $conversation): bool
+    {
+        return $this->hasCompanyAccess($user, $conversation, 'conversations.manage');
+    }
+
+    public function transferSector(User $user, Conversation $conversation): bool
+    {
+        return $this->hasCompanyAccess($user, $conversation, 'conversations.manage');
+    }
+
+    private function hasConversationPermission(User $user): bool
+    {
+        return $user->hasCompanyPermission('conversations.view')
+            || $user->hasCompanyPermission('conversations.manage');
+    }
+
+    private function hasCompanyConversationAccess(User $user, Conversation $conversation): bool
+    {
+        return $this->hasCompanyAccess($user, $conversation, 'conversations.view')
+            || $this->hasCompanyAccess($user, $conversation, 'conversations.manage');
     }
 }

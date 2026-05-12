@@ -106,6 +106,8 @@ class ConversationApiTest extends TestCase
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $visibleConversation->id)
             ->assertJsonPath('data.0.contact.name', 'Maria Silva')
+            ->assertJsonPath('data.0.assigned_at', null)
+            ->assertJsonPath('data.0.closed_at', null)
             ->assertJsonPath('data.0.messages_count', 1);
 
         $showResponse = $this->withHeader('X-Company-Id', (string) $company->id)
@@ -193,6 +195,7 @@ class ConversationApiTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.conversation.id', $conversation->id)
             ->assertJsonPath('data.conversation.status', Conversation::STATUS_OPEN)
+            ->assertJsonPath('data.conversation.closed_at', null)
             ->assertJsonPath('data.message.direction', Message::DIRECTION_OUTBOUND)
             ->assertJsonPath('data.message.external_id', 'outbound-msg-001')
             ->assertJsonPath('data.message.body', 'Retornando seu atendimento.');
@@ -252,17 +255,279 @@ class ConversationApiTest extends TestCase
 
         $closeResponse->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.status', Conversation::STATUS_CLOSED);
+            ->assertJsonPath('data.status', Conversation::STATUS_CLOSED)
+            ->assertJson(fn ($json) => $json->where('success', true)
+                ->where('data.status', Conversation::STATUS_CLOSED)
+                ->whereType('data.closed_at', 'string')
+                ->etc());
 
         $reopenResponse = $this->withHeader('X-Company-Id', (string) $company->id)
             ->postJson(sprintf('/api/v1/conversations/%d/reopen', $conversation->id));
 
         $reopenResponse->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.status', Conversation::STATUS_OPEN);
+            ->assertJsonPath('data.status', Conversation::STATUS_OPEN)
+            ->assertJsonPath('data.closed_at', null);
 
         $this->assertDatabaseHas('conversations', [
             'id' => $conversation->id,
+            'status' => Conversation::STATUS_OPEN,
+            'closed_at' => null,
+        ]);
+    }
+
+    public function test_an_attendant_can_assign_a_waiting_conversation_to_themselves(): void
+    {
+        $user = User::factory()->create();
+        $company = $this->createCompany(['slug' => 'company-assign-me']);
+        $workspace = $this->createWorkspace($company, ['slug' => 'workspace-assign-me']);
+        $sector = $this->createSector($company, ['slug' => 'support-assign-me']);
+        $role = $this->createRole($company, 'agent', ['conversations.view']);
+
+        $this->attachUserToCompany($user, $company, $role);
+        Sanctum::actingAs($user);
+
+        $contact = Contact::query()->create([
+            'company_id' => $company->id,
+            'workspace_id' => $workspace->id,
+            'name' => 'Cliente Queue',
+            'phone' => '5511999993333',
+            'metadata' => [],
+        ]);
+
+        $conversation = Conversation::query()->create([
+            'company_id' => $company->id,
+            'sector_id' => $sector->id,
+            'contact_id' => $contact->id,
+            'status' => Conversation::STATUS_WAITING,
+            'last_message_at' => now(),
+        ]);
+
+        $response = $this->withHeader('X-Company-Id', (string) $company->id)
+            ->postJson(sprintf('/api/v1/conversations/%d/assign-me', $conversation->id));
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.id', $conversation->id)
+            ->assertJsonPath('data.status', Conversation::STATUS_OPEN)
+            ->assertJsonPath('data.assigned_user_id', $user->id)
+            ->assertJson(fn ($json) => $json->where('success', true)
+                ->where('data.id', $conversation->id)
+                ->where('data.status', Conversation::STATUS_OPEN)
+                ->where('data.assigned_user_id', $user->id)
+                ->whereType('data.assigned_at', 'string')
+                ->where('data.closed_at', null)
+                ->etc());
+
+        $this->assertDatabaseHas('conversations', [
+            'id' => $conversation->id,
+            'assigned_user_id' => $user->id,
+            'status' => Conversation::STATUS_OPEN,
+        ]);
+    }
+
+    public function test_it_lists_attendants_and_the_waiting_queue_only_for_the_current_company(): void
+    {
+        $admin = User::factory()->create();
+        $attendant = User::factory()->create();
+        $inactiveAttendant = User::factory()->create();
+        $viewerWithoutConversationAccess = User::factory()->create();
+        $foreignAttendant = User::factory()->create();
+
+        $company = $this->createCompany(['slug' => 'company-queue']);
+        $foreignCompany = $this->createCompany(['slug' => 'company-queue-foreign']);
+        $workspace = $this->createWorkspace($company, ['slug' => 'workspace-queue']);
+        $foreignWorkspace = $this->createWorkspace($foreignCompany, ['slug' => 'workspace-queue-foreign']);
+        $support = $this->createSector($company, ['slug' => 'support-queue']);
+        $sales = $this->createSector($company, ['slug' => 'sales-queue']);
+        $foreignSector = $this->createSector($foreignCompany, ['slug' => 'foreign-queue']);
+
+        $adminRole = $this->createRole($company, 'admin', ['conversations.manage']);
+        $attendantRole = $this->createRole($company, 'agent', ['conversations.view']);
+        $noConversationRole = $this->createRole($company, 'observer', ['messages.view']);
+        $foreignRole = $this->createRole($foreignCompany, 'agent', ['conversations.view']);
+
+        $this->attachUserToCompany($admin, $company, $adminRole);
+        $this->attachUserToCompany($attendant, $company, $attendantRole);
+        $this->attachUserToCompany($inactiveAttendant, $company, $attendantRole, false);
+        $this->attachUserToCompany($viewerWithoutConversationAccess, $company, $noConversationRole);
+        $this->attachUserToCompany($foreignAttendant, $foreignCompany, $foreignRole);
+
+        Sanctum::actingAs($admin);
+
+        $contact = Contact::query()->create([
+            'company_id' => $company->id,
+            'workspace_id' => $workspace->id,
+            'name' => 'Cliente Waiting',
+            'phone' => '5511999994444',
+            'metadata' => [],
+        ]);
+
+        $secondContact = Contact::query()->create([
+            'company_id' => $company->id,
+            'workspace_id' => $workspace->id,
+            'name' => 'Cliente Open',
+            'phone' => '5511999994445',
+            'metadata' => [],
+        ]);
+
+        $foreignContact = Contact::query()->create([
+            'company_id' => $foreignCompany->id,
+            'workspace_id' => $foreignWorkspace->id,
+            'name' => 'Cliente Foreign',
+            'phone' => '5511999994446',
+            'metadata' => [],
+        ]);
+
+        $waitingConversation = Conversation::query()->create([
+            'company_id' => $company->id,
+            'sector_id' => $support->id,
+            'contact_id' => $contact->id,
+            'status' => Conversation::STATUS_WAITING,
+            'last_message_at' => now(),
+        ]);
+
+        Conversation::query()->create([
+            'company_id' => $company->id,
+            'sector_id' => $sales->id,
+            'contact_id' => $secondContact->id,
+            'assigned_user_id' => $attendant->id,
+            'status' => Conversation::STATUS_OPEN,
+            'assigned_at' => now(),
+            'last_message_at' => now(),
+        ]);
+
+        Conversation::query()->create([
+            'company_id' => $foreignCompany->id,
+            'sector_id' => $foreignSector->id,
+            'contact_id' => $foreignContact->id,
+            'status' => Conversation::STATUS_WAITING,
+            'last_message_at' => now(),
+        ]);
+
+        $attendantsResponse = $this->withHeader('X-Company-Id', (string) $company->id)
+            ->getJson('/api/v1/attendants');
+
+        $attendantsResponse->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonCount(2, 'data')
+            ->assertJsonFragment(['user_id' => $admin->id])
+            ->assertJsonFragment(['user_id' => $attendant->id]);
+
+        $queueResponse = $this->withHeader('X-Company-Id', (string) $company->id)
+            ->getJson('/api/v1/queue');
+
+        $queueResponse->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.summary.waiting', 1)
+            ->assertJsonPath('data.summary.open', 1)
+            ->assertJsonPath('data.summary.closed', 0)
+            ->assertJsonCount(1, 'data.conversations')
+            ->assertJsonPath('data.conversations.0.id', $waitingConversation->id);
+    }
+
+    public function test_admin_can_assign_a_conversation_to_another_attendant_and_transfer_it_to_another_sector(): void
+    {
+        $admin = User::factory()->create();
+        $attendant = User::factory()->create();
+        $company = $this->createCompany(['slug' => 'company-admin-transfer']);
+        $workspace = $this->createWorkspace($company, ['slug' => 'workspace-admin-transfer']);
+        $support = $this->createSector($company, ['slug' => 'support-admin-transfer']);
+        $billing = $this->createSector($company, ['slug' => 'billing-admin-transfer']);
+        $adminRole = $this->createRole($company, 'admin', ['conversations.manage']);
+        $attendantRole = $this->createRole($company, 'agent', ['conversations.view']);
+
+        $this->attachUserToCompany($admin, $company, $adminRole);
+        $this->attachUserToCompany($attendant, $company, $attendantRole);
+        Sanctum::actingAs($admin);
+
+        $contact = Contact::query()->create([
+            'company_id' => $company->id,
+            'workspace_id' => $workspace->id,
+            'name' => 'Cliente Transferencia',
+            'phone' => '5511999995555',
+            'metadata' => [],
+        ]);
+
+        $conversation = Conversation::query()->create([
+            'company_id' => $company->id,
+            'sector_id' => $support->id,
+            'contact_id' => $contact->id,
+            'status' => Conversation::STATUS_WAITING,
+            'last_message_at' => now(),
+        ]);
+
+        $assignResponse = $this->withHeader('X-Company-Id', (string) $company->id)
+            ->postJson(sprintf('/api/v1/conversations/%d/assign-user', $conversation->id), [
+                'user_id' => $attendant->id,
+            ]);
+
+        $assignResponse->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.status', Conversation::STATUS_OPEN)
+            ->assertJsonPath('data.assigned_user_id', $attendant->id);
+
+        $transferResponse = $this->withHeader('X-Company-Id', (string) $company->id)
+            ->postJson(sprintf('/api/v1/conversations/%d/transfer-sector', $conversation->id), [
+                'sector_id' => $billing->id,
+            ]);
+
+        $transferResponse->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.status', Conversation::STATUS_WAITING)
+            ->assertJsonPath('data.sector_id', $billing->id)
+            ->assertJsonPath('data.assigned_user_id', null)
+            ->assertJsonPath('data.assigned_at', null);
+
+        $this->assertDatabaseHas('conversations', [
+            'id' => $conversation->id,
+            'sector_id' => $billing->id,
+            'status' => Conversation::STATUS_WAITING,
+            'assigned_user_id' => null,
+        ]);
+    }
+
+    public function test_an_attendant_cannot_transfer_a_conversation_to_another_sector(): void
+    {
+        $attendant = User::factory()->create();
+        $company = $this->createCompany(['slug' => 'company-transfer-forbidden']);
+        $workspace = $this->createWorkspace($company, ['slug' => 'workspace-transfer-forbidden']);
+        $support = $this->createSector($company, ['slug' => 'support-transfer-forbidden']);
+        $billing = $this->createSector($company, ['slug' => 'billing-transfer-forbidden']);
+        $attendantRole = $this->createRole($company, 'agent', ['conversations.view']);
+
+        $this->attachUserToCompany($attendant, $company, $attendantRole);
+        Sanctum::actingAs($attendant);
+
+        $contact = Contact::query()->create([
+            'company_id' => $company->id,
+            'workspace_id' => $workspace->id,
+            'name' => 'Cliente Restrito',
+            'phone' => '5511999996666',
+            'metadata' => [],
+        ]);
+
+        $conversation = Conversation::query()->create([
+            'company_id' => $company->id,
+            'sector_id' => $support->id,
+            'contact_id' => $contact->id,
+            'status' => Conversation::STATUS_OPEN,
+            'assigned_user_id' => $attendant->id,
+            'assigned_at' => now(),
+            'last_message_at' => now(),
+        ]);
+
+        $response = $this->withHeader('X-Company-Id', (string) $company->id)
+            ->postJson(sprintf('/api/v1/conversations/%d/transfer-sector', $conversation->id), [
+                'sector_id' => $billing->id,
+            ]);
+
+        $response->assertForbidden();
+
+        $this->assertDatabaseHas('conversations', [
+            'id' => $conversation->id,
+            'sector_id' => $support->id,
+            'assigned_user_id' => $attendant->id,
             'status' => Conversation::STATUS_OPEN,
         ]);
     }

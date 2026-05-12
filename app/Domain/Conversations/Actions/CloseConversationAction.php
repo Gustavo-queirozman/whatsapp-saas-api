@@ -10,6 +10,7 @@ class CloseConversationAction
     {
         $conversation->forceFill([
             'status' => Conversation::STATUS_CLOSED,
+            'closed_at' => now(),
         ])->save();
 
         return $conversation->fresh([

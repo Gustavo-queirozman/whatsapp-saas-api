@@ -29,10 +29,14 @@ class Conversation extends Model
         'contact_id',
         'assigned_user_id',
         'status',
+        'assigned_at',
+        'closed_at',
         'last_message_at',
     ];
 
     protected $casts = [
+        'assigned_at' => 'datetime',
+        'closed_at' => 'datetime',
         'last_message_at' => 'datetime',
     ];
 

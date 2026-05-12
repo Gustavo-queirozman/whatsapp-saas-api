@@ -16,6 +16,8 @@ class ConversationResource extends JsonResource
             'contact_id' => $this->contact_id,
             'assigned_user_id' => $this->assigned_user_id,
             'status' => $this->status,
+            'assigned_at' => optional($this->assigned_at)->toAtomString(),
+            'closed_at' => optional($this->closed_at)->toAtomString(),
             'last_message_at' => optional($this->last_message_at)->toAtomString(),
             'messages_count' => $this->whenCounted('messages'),
             'contact' => $this->whenLoaded('contact', fn (): array => [
