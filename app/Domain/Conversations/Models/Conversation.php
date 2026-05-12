@@ -3,12 +3,14 @@
 namespace App\Domain\Conversations\Models;
 
 use App\Domain\Queues\Models\Sector;
+use App\Domain\Tags\Models\Tag;
 use App\Domain\WhatsApp\Models\WhatsappInstance;
 use App\Models\Concerns\BelongsToCompany;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Conversation extends Model
@@ -63,5 +65,12 @@ class Conversation extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class);
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class)
+            ->withPivot('company_id')
+            ->withTimestamps();
     }
 }

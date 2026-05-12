@@ -43,6 +43,8 @@ class InitialCompanySeeder extends Seeder
             ['name' => 'Gerenciar contatos', 'slug' => 'contacts.manage'],
             ['name' => 'Visualizar conversas', 'slug' => 'conversations.view'],
             ['name' => 'Gerenciar conversas', 'slug' => 'conversations.manage'],
+            ['name' => 'Visualizar tags', 'slug' => 'tags.view'],
+            ['name' => 'Gerenciar tags', 'slug' => 'tags.manage'],
             ['name' => 'Visualizar WhatsApp', 'slug' => 'whatsapp.view'],
             ['name' => 'Gerenciar WhatsApp', 'slug' => 'whatsapp.manage'],
             ['name' => 'Visualizar workspaces', 'slug' => 'workspaces.view'],

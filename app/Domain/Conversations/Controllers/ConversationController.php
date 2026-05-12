@@ -32,7 +32,7 @@ class ConversationController extends Controller
         $this->authorize('viewAny', Conversation::class);
 
         $query = Conversation::query()
-            ->with(['contact', 'sector', 'whatsappInstance', 'assignedUser'])
+            ->with(['contact', 'sector', 'whatsappInstance', 'assignedUser', 'tags'])
             ->withCount('messages')
             ->orderByDesc('last_message_at')
             ->orderByDesc('id');
@@ -100,7 +100,7 @@ class ConversationController extends Controller
         $this->authorize('viewAny', Conversation::class);
 
         $query = Conversation::query()
-            ->with(['contact', 'sector', 'whatsappInstance', 'assignedUser'])
+            ->with(['contact', 'sector', 'whatsappInstance', 'assignedUser', 'tags'])
             ->withCount('messages')
             ->where('status', Conversation::STATUS_WAITING)
             ->orderByDesc('last_message_at')
@@ -129,7 +129,7 @@ class ConversationController extends Controller
     {
         $this->authorize('view', $conversation);
 
-        $conversation->load(['contact', 'sector', 'whatsappInstance', 'assignedUser'])
+        $conversation->load(['contact', 'sector', 'whatsappInstance', 'assignedUser', 'tags'])
             ->loadCount('messages');
 
         return response()->json([
@@ -161,7 +161,9 @@ class ConversationController extends Controller
     ): JsonResponse {
         $this->authorize('assignToSelf', $conversation);
 
-        $conversation = $action->execute($conversation, $request->user())->loadCount('messages');
+        $conversation = $action->execute($conversation, $request->user())
+            ->load(['contact', 'sector', 'whatsappInstance', 'assignedUser', 'tags'])
+            ->loadCount('messages');
 
         return response()->json([
             'success' => true,
@@ -179,7 +181,8 @@ class ConversationController extends Controller
         $conversation = $action->execute(
             $conversation,
             $request->integer('user_id'),
-        )->loadCount('messages');
+        )->load(['contact', 'sector', 'whatsappInstance', 'assignedUser', 'tags'])
+            ->loadCount('messages');
 
         return response()->json([
             'success' => true,
@@ -196,7 +199,9 @@ class ConversationController extends Controller
 
         $sector = Sector::query()->findOrFail($request->integer('sector_id'));
 
-        $conversation = $action->execute($conversation, $sector)->loadCount('messages');
+        $conversation = $action->execute($conversation, $sector)
+            ->load(['contact', 'sector', 'whatsappInstance', 'assignedUser', 'tags'])
+            ->loadCount('messages');
 
         return response()->json([
             'success' => true,
@@ -217,7 +222,7 @@ class ConversationController extends Controller
             SendConversationMessageData::fromRequest($request),
         );
 
-        $conversation->refresh()->load(['contact', 'sector', 'whatsappInstance', 'assignedUser'])
+        $conversation->refresh()->load(['contact', 'sector', 'whatsappInstance', 'assignedUser', 'tags'])
             ->loadCount('messages');
 
         return response()->json([
@@ -236,7 +241,9 @@ class ConversationController extends Controller
     ): JsonResponse {
         $this->authorize('update', $conversation);
 
-        $conversation = $action->execute($conversation)->loadCount('messages');
+        $conversation = $action->execute($conversation)
+            ->load(['contact', 'sector', 'whatsappInstance', 'assignedUser', 'tags'])
+            ->loadCount('messages');
 
         return response()->json([
             'success' => true,
@@ -251,7 +258,9 @@ class ConversationController extends Controller
     ): JsonResponse {
         $this->authorize('update', $conversation);
 
-        $conversation = $action->execute($conversation)->loadCount('messages');
+        $conversation = $action->execute($conversation)
+            ->load(['contact', 'sector', 'whatsappInstance', 'assignedUser', 'tags'])
+            ->loadCount('messages');
 
         return response()->json([
             'success' => true,

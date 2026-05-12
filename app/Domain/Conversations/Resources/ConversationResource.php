@@ -6,7 +6,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class ConversationResource extends JsonResource
 {
-    public function toArray($request)
+    public function toArray($request): array
     {
         return [
             'id' => $this->id,
@@ -46,6 +46,11 @@ class ConversationResource extends JsonResource
                     'name' => $this->assignedUser->name,
                     'email' => $this->assignedUser->email,
                 ]),
+            'tags' => $this->whenLoaded('tags', fn () => $this->tags->map(fn ($tag): array => [
+                'id' => $tag->id,
+                'name' => $tag->name,
+                'color' => $tag->color,
+            ])->values()->all()),
             'created_at' => optional($this->created_at)->toAtomString(),
             'updated_at' => optional($this->updated_at)->toAtomString(),
         ];
