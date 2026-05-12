@@ -4,15 +4,33 @@ namespace App\Domain\Conversations\Actions;
 
 use App\Domain\Conversations\Models\Conversation;
 use App\Models\User;
+use App\Services\Companies\CompanyAttendantService;
 use Illuminate\Validation\ValidationException;
 
 class AssignConversationToCurrentUserAction
 {
+    public function __construct(
+        private readonly CompanyAttendantService $companyAttendantService,
+    ) {
+    }
+
     public function execute(Conversation $conversation, User $user): Conversation
     {
         if ($conversation->status !== Conversation::STATUS_WAITING) {
             throw ValidationException::withMessages([
                 'conversation' => 'Somente conversas aguardando podem ser assumidas.',
+            ]);
+        }
+
+        $membership = $this->companyAttendantService->findBySectorAndUser(
+            $conversation->company_id,
+            $conversation->sector_id,
+            $user->id,
+        );
+
+        if ($membership === null) {
+            throw ValidationException::withMessages([
+                'conversation' => 'Voce nao pertence ao setor desta conversa.',
             ]);
         }
 

@@ -40,6 +40,11 @@ class ConversationPolicy
         return $this->hasCompanyAccess($user, $conversation, 'conversations.manage');
     }
 
+    public function autoAssign(User $user, Conversation $conversation): bool
+    {
+        return $this->hasCompanyAccess($user, $conversation, 'conversations.manage');
+    }
+
     public function transferSector(User $user, Conversation $conversation): bool
     {
         return $this->hasCompanyAccess($user, $conversation, 'conversations.manage');

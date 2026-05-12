@@ -76,4 +76,13 @@ trait CreatesCompanyContext
             'settings' => [],
         ], $attributes));
     }
+
+    protected function attachUserToSector(Sector $sector, User $user): void
+    {
+        $sector->users()->syncWithoutDetaching([
+            $user->id => [
+                'company_id' => $sector->company_id,
+            ],
+        ]);
+    }
 }

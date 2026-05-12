@@ -42,6 +42,7 @@ class ConversationApiTest extends TestCase
         $role = $this->createRole($company, 'agent', ['conversations.view', 'messages.view']);
 
         $this->attachUserToCompany($user, $company, $role);
+        $this->attachUserToSector($sector, $user);
         Sanctum::actingAs($user);
 
         $contact = Contact::query()->create([
@@ -285,6 +286,7 @@ class ConversationApiTest extends TestCase
         $role = $this->createRole($company, 'agent', ['conversations.view']);
 
         $this->attachUserToCompany($user, $company, $role);
+        $this->attachUserToSector($sector, $user);
         Sanctum::actingAs($user);
 
         $contact = Contact::query()->create([
@@ -439,6 +441,7 @@ class ConversationApiTest extends TestCase
 
         $this->attachUserToCompany($admin, $company, $adminRole);
         $this->attachUserToCompany($attendant, $company, $attendantRole);
+        $this->attachUserToSector($support, $attendant);
         Sanctum::actingAs($admin);
 
         $contact = Contact::query()->create([

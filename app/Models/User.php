@@ -6,6 +6,7 @@ use App\Domain\Conversations\Models\Conversation;
 use App\Domain\Companies\Models\Company;
 use App\Domain\Companies\Models\CompanyUser;
 use App\Domain\Companies\Models\Role;
+use App\Domain\Queues\Models\Sector;
 use App\Support\CurrentCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -60,6 +61,13 @@ class User extends Authenticatable
     public function companyMemberships(): HasMany
     {
         return $this->hasMany(CompanyUser::class);
+    }
+
+    public function sectors(): BelongsToMany
+    {
+        return $this->belongsToMany(Sector::class, 'sector_users')
+            ->withPivot('company_id')
+            ->withTimestamps();
     }
 
     public function assignedConversations(): HasMany

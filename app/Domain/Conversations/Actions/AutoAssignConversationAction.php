@@ -3,27 +3,33 @@
 namespace App\Domain\Conversations\Actions;
 
 use App\Domain\Conversations\Models\Conversation;
+use App\Domain\Companies\Models\CompanyUser;
 use App\Services\Companies\CompanyAttendantService;
 use Illuminate\Validation\ValidationException;
 
-class AssignConversationToUserAction
+class AutoAssignConversationAction
 {
     public function __construct(
         private readonly CompanyAttendantService $companyAttendantService,
     ) {
     }
 
-    public function execute(Conversation $conversation, int $userId): Conversation
+    public function execute(Conversation $conversation): Conversation
     {
-        $membership = $this->companyAttendantService->findBySectorAndUser(
-            $conversation->company_id,
-            $conversation->sector_id,
-            $userId,
-        );
-
-        if ($membership === null) {
+        if ($conversation->status !== Conversation::STATUS_WAITING) {
             throw ValidationException::withMessages([
-                'user_id' => 'O usuario informado nao pode atender conversas deste setor.',
+                'conversation' => 'Somente conversas aguardando podem ser distribuidas automaticamente.',
+            ]);
+        }
+
+        $membership = $this->companyAttendantService
+            ->listBySector($conversation->company_id, $conversation->sector_id)
+            ->filter(fn (CompanyUser $item): bool => $item->user !== null)
+            ->first();
+
+        if (! $membership instanceof CompanyUser) {
+            throw ValidationException::withMessages([
+                'conversation' => 'Nao ha atendentes disponiveis para o setor informado.',
             ]);
         }
 

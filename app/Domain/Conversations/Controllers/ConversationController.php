@@ -5,6 +5,7 @@ namespace App\Domain\Conversations\Controllers;
 use App\DTOs\Conversations\SendConversationMessageData;
 use App\Domain\Conversations\Actions\AssignConversationToCurrentUserAction;
 use App\Domain\Conversations\Actions\AssignConversationToUserAction;
+use App\Domain\Conversations\Actions\AutoAssignConversationAction;
 use App\Domain\Conversations\Actions\CloseConversationAction;
 use App\Domain\Conversations\Actions\ReopenConversationAction;
 use App\Domain\Conversations\Actions\SendConversationMessageAction;
@@ -182,6 +183,23 @@ class ConversationController extends Controller
             $conversation,
             $request->integer('user_id'),
         )->load(['contact', 'sector', 'whatsappInstance', 'assignedUser', 'tags'])
+            ->loadCount('messages');
+
+        return response()->json([
+            'success' => true,
+            'data' => (new ConversationResource($conversation))->resolve($request),
+        ]);
+    }
+
+    public function autoAssign(
+        Request $request,
+        Conversation $conversation,
+        AutoAssignConversationAction $action
+    ): JsonResponse {
+        $this->authorize('autoAssign', $conversation);
+
+        $conversation = $action->execute($conversation)
+            ->load(['contact', 'sector', 'whatsappInstance', 'assignedUser', 'tags'])
             ->loadCount('messages');
 
         return response()->json([

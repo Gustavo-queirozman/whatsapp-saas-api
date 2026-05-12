@@ -11,6 +11,7 @@ Route::prefix('v1')->group(function () {
     require base_path('routes/domains/auth.php');
     require base_path('routes/domains/companies.php');
     require base_path('routes/domains/conversations.php');
+    require base_path('routes/domains/sectors.php');
     require base_path('routes/domains/tags.php');
     require base_path('routes/domains/whatsapp.php');
 });
