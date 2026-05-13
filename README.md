@@ -26,6 +26,10 @@ Base inicial de uma API Laravel para um SaaS multi-tenant de atendimento WhatsAp
 - `POST /api/v1/auth/logout`
 - `GET /api/v1/companies`
 
+## Documentacao
+
+- Contrato API x Frontend: [docs/api-frontend-contract.md](docs/api-frontend-contract.md)
+
 ## Instalacao
 
 ```bash
