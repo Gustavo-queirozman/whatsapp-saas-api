@@ -6,6 +6,7 @@ use App\Domain\Companies\Models\Company;
 use App\Domain\Companies\Models\Permission;
 use App\Domain\Companies\Models\Role;
 use App\Domain\Companies\Models\Workspace;
+use App\Domain\Conversations\Models\Contact;
 use App\Domain\Queues\Models\Sector;
 use App\Models\User;
 
@@ -84,5 +85,16 @@ trait CreatesCompanyContext
                 'company_id' => $sector->company_id,
             ],
         ]);
+    }
+
+    protected function createContact(Company $company, Workspace $workspace, array $attributes = []): Contact
+    {
+        return Contact::query()->create(array_merge([
+            'company_id' => $company->id,
+            'workspace_id' => $workspace->id,
+            'name' => 'Contato '.uniqid(),
+            'phone' => '55119999'.random_int(1000, 9999),
+            'metadata' => [],
+        ], $attributes));
     }
 }

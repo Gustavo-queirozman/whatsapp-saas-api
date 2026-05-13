@@ -55,6 +55,8 @@ class InitialCompanySeeder extends Seeder
             ['name' => 'Gerenciar mensagens', 'slug' => 'messages.manage'],
             ['name' => 'Visualizar chatbots', 'slug' => 'chatbots.view'],
             ['name' => 'Gerenciar chatbots', 'slug' => 'chatbots.manage'],
+            ['name' => 'Visualizar CRM', 'slug' => 'crm.view'],
+            ['name' => 'Gerenciar CRM', 'slug' => 'crm.manage'],
         ])->map(fn (array $attributes): Permission => Permission::updateOrCreate(
             ['slug' => $attributes['slug']],
             $attributes

@@ -3,6 +3,7 @@
 namespace App\Domain\Conversations\Models;
 
 use App\Domain\Companies\Models\Workspace;
+use App\Domain\Crm\Models\Deal;
 use App\Domain\Tags\Models\Tag;
 use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -37,6 +38,11 @@ class Contact extends Model
     public function conversations(): HasMany
     {
         return $this->hasMany(Conversation::class);
+    }
+
+    public function deals(): HasMany
+    {
+        return $this->hasMany(Deal::class);
     }
 
     public function tags(): BelongsToMany
