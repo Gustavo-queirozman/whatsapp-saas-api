@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Domain\Conversations\Actions;
+namespace App\Services\Chatbot;
 
-use App\DTOs\Conversations\SendConversationMessageData;
+use App\Domain\Chatbot\Models\BotFlow;
 use App\Domain\Conversations\Models\Conversation;
 use App\Domain\Conversations\Models\Message;
 use App\Domain\WhatsApp\Models\WhatsappInstance;
@@ -11,7 +11,7 @@ use App\Services\EvolutionGateway\EvolutionMessageMetadataResolver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-class SendConversationMessageAction
+class BotFlowReplyService
 {
     public function __construct(
         private readonly EvolutionClient $evolutionClient,
@@ -19,8 +19,14 @@ class SendConversationMessageAction
     ) {
     }
 
-    public function execute(Conversation $conversation, SendConversationMessageData $data): Message
+    public function send(Conversation $conversation, BotFlow $botFlow, string $text): ?Message
     {
+        $normalizedText = trim($text);
+
+        if ($normalizedText === '') {
+            return null;
+        }
+
         $conversation->loadMissing(['contact', 'whatsappInstance']);
 
         $instance = $conversation->whatsappInstance;
@@ -42,24 +48,28 @@ class SendConversationMessageAction
         $response = $this->evolutionClient->sendTextMessage(
             $instance->instance_name,
             $phone,
-            $data->body,
-            $data->options,
+            $normalizedText,
         );
 
-        return DB::transaction(function () use ($conversation, $data, $response): Message {
+        return DB::transaction(function () use ($conversation, $botFlow, $normalizedText, $response): Message {
+            $sentAt = $this->metadataResolver->resolveSentAt($response);
+
             $message = $conversation->messages()->create([
                 'company_id' => $conversation->company_id,
                 'direction' => Message::DIRECTION_OUTBOUND,
                 'type' => Message::TYPE_TEXT,
                 'external_id' => $this->metadataResolver->extractExternalId($response),
-                'body' => $data->body,
-                'payload' => $response,
-                'sent_at' => $this->metadataResolver->resolveSentAt($response)?->toDateTimeString()
-                    ?? now()->toDateTimeString(),
+                'body' => $normalizedText,
+                'payload' => array_merge($response, [
+                    'automation' => [
+                        'type' => 'chatbot',
+                        'bot_flow_id' => $botFlow->id,
+                    ],
+                ]),
+                'sent_at' => $sentAt?->toDateTimeString() ?? now()->toDateTimeString(),
             ]);
 
             $conversation->forceFill([
-                'status' => Conversation::STATUS_OPEN,
                 'closed_at' => null,
                 'last_message_at' => $message->sent_at ?? now(),
             ])->save();

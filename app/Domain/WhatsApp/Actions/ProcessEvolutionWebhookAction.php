@@ -2,6 +2,7 @@
 
 namespace App\Domain\WhatsApp\Actions;
 
+use App\Domain\Chatbot\Actions\ExecuteConversationBotFlowAction;
 use App\Domain\Conversations\Models\Contact;
 use App\Domain\Conversations\Models\Conversation;
 use App\Domain\Conversations\Models\Message;
@@ -20,6 +21,7 @@ class ProcessEvolutionWebhookAction
         private readonly CompanyWorkspaceResolver $workspaceResolver,
         private readonly EvolutionWebhookLogger $logger,
         private readonly CurrentCompany $currentCompany,
+        private readonly ExecuteConversationBotFlowAction $executeConversationBotFlowAction,
     ) {
     }
 
@@ -110,6 +112,8 @@ class ProcessEvolutionWebhookAction
                 'closed_at' => null,
                 'last_message_at' => $message->sent_at ?? Carbon::now(),
             ])->save();
+
+            $this->executeConversationBotFlowAction->execute($conversation, $message);
 
             $this->logger->processed(
                 $payload,
