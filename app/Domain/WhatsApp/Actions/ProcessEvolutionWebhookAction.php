@@ -9,6 +9,7 @@ use App\Domain\Conversations\Models\Message;
 use App\Domain\WhatsApp\Models\WhatsappInstance;
 use App\DTOs\WhatsApp\EvolutionWebhookPayloadData;
 use App\DTOs\WhatsApp\ProcessEvolutionWebhookResultData;
+use App\Services\Realtime\RealtimeBroadcastService;
 use App\Services\WhatsApp\CompanyWorkspaceResolver;
 use App\Services\WhatsApp\EvolutionWebhookLogger;
 use App\Support\CurrentCompany;
@@ -22,6 +23,7 @@ class ProcessEvolutionWebhookAction
         private readonly EvolutionWebhookLogger $logger,
         private readonly CurrentCompany $currentCompany,
         private readonly ExecuteConversationBotFlowAction $executeConversationBotFlowAction,
+        private readonly RealtimeBroadcastService $realtimeBroadcastService,
     ) {
     }
 
@@ -112,6 +114,9 @@ class ProcessEvolutionWebhookAction
                 'closed_at' => null,
                 'last_message_at' => $message->sent_at ?? Carbon::now(),
             ])->save();
+
+            $this->realtimeBroadcastService->broadcastMessageReceived($message);
+            $this->realtimeBroadcastService->broadcastConversationUpdated($conversation);
 
             $this->executeConversationBotFlowAction->execute($conversation, $message);
 

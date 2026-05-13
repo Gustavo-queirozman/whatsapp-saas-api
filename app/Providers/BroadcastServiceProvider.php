@@ -7,14 +7,12 @@ use Illuminate\Support\ServiceProvider;
 
 class BroadcastServiceProvider extends ServiceProvider
 {
-    /**
-     * Bootstrap any application services.
-     *
-     * @return void
-     */
     public function boot(): void
     {
-        Broadcast::routes();
+        Broadcast::routes([
+            'middleware' => ['auth:sanctum', 'current.company'],
+            'prefix' => 'api/v1',
+        ]);
 
         require base_path('routes/channels.php');
     }

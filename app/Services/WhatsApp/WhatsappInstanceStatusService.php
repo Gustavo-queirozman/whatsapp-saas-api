@@ -3,10 +3,16 @@
 namespace App\Services\WhatsApp;
 
 use App\Domain\WhatsApp\Models\WhatsappInstance;
+use App\Services\Realtime\RealtimeBroadcastService;
 use Illuminate\Support\Carbon;
 
 class WhatsappInstanceStatusService
 {
+    public function __construct(
+        private readonly RealtimeBroadcastService $realtimeBroadcastService,
+    ) {
+    }
+
     /**
      * @param  array<string, mixed>  $payload
      */
@@ -24,9 +30,18 @@ class WhatsappInstanceStatusService
                 $normalizedStatus,
                 $whatsappInstance->last_connection_at,
             ),
-        ])->save();
+        ]);
 
-        return $whatsappInstance->refresh();
+        if (! $whatsappInstance->isDirty()) {
+            return $whatsappInstance;
+        }
+
+        $whatsappInstance->save();
+
+        $whatsappInstance = $whatsappInstance->refresh();
+        $this->realtimeBroadcastService->broadcastInstanceStatusChanged($whatsappInstance);
+
+        return $whatsappInstance;
     }
 
     public function normalize(?string $status, string $fallback = 'disconnected'): string

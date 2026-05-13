@@ -5,12 +5,14 @@ namespace App\Domain\Conversations\Actions;
 use App\Domain\Conversations\Models\Conversation;
 use App\Domain\Companies\Models\CompanyUser;
 use App\Services\Companies\CompanyAttendantService;
+use App\Services\Realtime\RealtimeBroadcastService;
 use Illuminate\Validation\ValidationException;
 
 class AutoAssignConversationAction
 {
     public function __construct(
         private readonly CompanyAttendantService $companyAttendantService,
+        private readonly RealtimeBroadcastService $realtimeBroadcastService,
     ) {
     }
 
@@ -40,11 +42,20 @@ class AutoAssignConversationAction
             'closed_at' => null,
         ])->save();
 
-        return $conversation->fresh([
+        $conversation = $conversation->fresh([
+            'contact',
+            'sector',
+            'whatsappInstance',
+            'assignedUser',
+        ]) ?? $conversation->loadMissing([
             'contact',
             'sector',
             'whatsappInstance',
             'assignedUser',
         ]);
+
+        $this->realtimeBroadcastService->broadcastConversationAssigned($conversation);
+
+        return $conversation;
     }
 }

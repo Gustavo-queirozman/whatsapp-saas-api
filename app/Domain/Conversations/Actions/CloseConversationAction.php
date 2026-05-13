@@ -3,9 +3,15 @@
 namespace App\Domain\Conversations\Actions;
 
 use App\Domain\Conversations\Models\Conversation;
+use App\Services\Realtime\RealtimeBroadcastService;
 
 class CloseConversationAction
 {
+    public function __construct(
+        private readonly RealtimeBroadcastService $realtimeBroadcastService,
+    ) {
+    }
+
     public function execute(Conversation $conversation): Conversation
     {
         $conversation->forceFill([
@@ -13,11 +19,20 @@ class CloseConversationAction
             'closed_at' => now(),
         ])->save();
 
-        return $conversation->fresh([
+        $conversation = $conversation->fresh([
+            'contact',
+            'sector',
+            'whatsappInstance',
+            'assignedUser',
+        ]) ?? $conversation->loadMissing([
             'contact',
             'sector',
             'whatsappInstance',
             'assignedUser',
         ]);
+
+        $this->realtimeBroadcastService->broadcastConversationUpdated($conversation);
+
+        return $conversation;
     }
 }

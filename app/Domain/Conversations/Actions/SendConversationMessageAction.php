@@ -8,6 +8,7 @@ use App\Domain\Conversations\Models\Message;
 use App\Domain\WhatsApp\Models\WhatsappInstance;
 use App\Services\EvolutionGateway\EvolutionClient;
 use App\Services\EvolutionGateway\EvolutionMessageMetadataResolver;
+use App\Services\Realtime\RealtimeBroadcastService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -16,6 +17,7 @@ class SendConversationMessageAction
     public function __construct(
         private readonly EvolutionClient $evolutionClient,
         private readonly EvolutionMessageMetadataResolver $metadataResolver,
+        private readonly RealtimeBroadcastService $realtimeBroadcastService,
     ) {
     }
 
@@ -46,7 +48,7 @@ class SendConversationMessageAction
             $data->options,
         );
 
-        return DB::transaction(function () use ($conversation, $data, $response): Message {
+        $message = DB::transaction(function () use ($conversation, $data, $response): Message {
             $message = $conversation->messages()->create([
                 'company_id' => $conversation->company_id,
                 'direction' => Message::DIRECTION_OUTBOUND,
@@ -64,7 +66,12 @@ class SendConversationMessageAction
                 'last_message_at' => $message->sent_at ?? now(),
             ])->save();
 
-            return $message->fresh('conversation');
+            return $message->fresh('conversation') ?? $message;
         });
+
+        $this->realtimeBroadcastService->broadcastMessageReceived($message);
+        $this->realtimeBroadcastService->broadcastConversationUpdated($conversation);
+
+        return $message;
     }
 }

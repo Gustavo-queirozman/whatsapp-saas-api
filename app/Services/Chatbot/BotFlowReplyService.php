@@ -8,6 +8,7 @@ use App\Domain\Conversations\Models\Message;
 use App\Domain\WhatsApp\Models\WhatsappInstance;
 use App\Services\EvolutionGateway\EvolutionClient;
 use App\Services\EvolutionGateway\EvolutionMessageMetadataResolver;
+use App\Services\Realtime\RealtimeBroadcastService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -16,6 +17,7 @@ class BotFlowReplyService
     public function __construct(
         private readonly EvolutionClient $evolutionClient,
         private readonly EvolutionMessageMetadataResolver $metadataResolver,
+        private readonly RealtimeBroadcastService $realtimeBroadcastService,
     ) {
     }
 
@@ -51,7 +53,7 @@ class BotFlowReplyService
             $normalizedText,
         );
 
-        return DB::transaction(function () use ($conversation, $botFlow, $normalizedText, $response): Message {
+        $message = DB::transaction(function () use ($conversation, $botFlow, $normalizedText, $response): Message {
             $sentAt = $this->metadataResolver->resolveSentAt($response);
 
             $message = $conversation->messages()->create([
@@ -74,7 +76,12 @@ class BotFlowReplyService
                 'last_message_at' => $message->sent_at ?? now(),
             ])->save();
 
-            return $message->fresh('conversation');
+            return $message->fresh('conversation') ?? $message;
         });
+
+        $this->realtimeBroadcastService->broadcastMessageReceived($message);
+        $this->realtimeBroadcastService->broadcastConversationUpdated($conversation);
+
+        return $message;
     }
 }
