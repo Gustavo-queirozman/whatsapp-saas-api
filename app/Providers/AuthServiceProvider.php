@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Domain\Campaigns\Models\Campaign;
 use App\Domain\Chatbot\Models\BotFlow;
 use App\Domain\Companies\Models\Company;
 use App\Domain\Companies\Models\Workspace;
@@ -11,6 +12,7 @@ use App\Domain\Conversations\Models\Message;
 use App\Domain\Queues\Models\Sector;
 use App\Domain\Tags\Models\Tag;
 use App\Domain\WhatsApp\Models\WhatsappInstance;
+use App\Policies\CampaignPolicy;
 use App\Policies\BotFlowPolicy;
 use App\Policies\CompanyPolicy;
 use App\Policies\ContactPolicy;
@@ -32,6 +34,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         Company::class => CompanyPolicy::class,
         Workspace::class => WorkspacePolicy::class,
+        Campaign::class => CampaignPolicy::class,
         BotFlow::class => BotFlowPolicy::class,
         WhatsappInstance::class => WhatsappInstancePolicy::class,
         Contact::class => ContactPolicy::class,
